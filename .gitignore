@@ -1,0 +1,78 @@
+# Build & Binary outputs
+bin/*
+!bin/Tuti.dmg
+!bin/Tuti-amd64-portable.exe
+!bin/Tuti-arm64-portable.exe
+dist/
+build/
+*.exe
+*.dmg
+*.app
+!bin/Tuti.dmg
+!bin/Tuti-amd64-portable.exe
+!bin/Tuti-arm64-portable.exe
+
+# Python runtime and packaging
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.venv/
+venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Node / JS
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Project specific runtime databases and models
+pipeline_work/
+checkpoints/
+models/
+outputs/
+test_outputs/
+
+# Audio outputs & uploads
+*.wav
+*.mp3
+*.MP3
+*.flac
+*.m4a
+!assets/repo_ses.MP3
+
+# Release scripts (contain private signing identities/profiles)
+release_macos.sh
+release_windows.sh
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Environment variables
+.env
+*.env
