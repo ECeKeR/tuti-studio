@@ -1,0 +1,2400 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tuti — AI Voice Compiler</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root {
+      --bg: #030408;
+      --bg2: #080b13;
+      --surface: rgba(10, 15, 26, 0.7);
+      --surface2: rgba(16, 22, 38, 0.85);
+      --border: rgba(255, 255, 255, 0.06);
+      --border-active: rgba(0, 162, 255, 0.35);
+      --neon-blue: #00a2ff;
+      --neon-blue-soft: rgba(0, 162, 255, 0.12);
+      --cyan: #00e5ff;
+      --green: #00e676;
+      --green-soft: rgba(0, 230, 118, 0.12);
+      --red: #ff5252;
+      --amber: #ffb300;
+      --text: #f0f0f8;
+      --text2: #8fa0c2;
+      --text3: #43517a;
+      --font: 'Inter', sans-serif;
+      --font-display: 'Outfit', sans-serif;
+      --glow: 0 0 24px rgba(0, 162, 255, 0.2);
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -200px;
+      left: -200px;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(0, 162, 255, 0.08) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.07);
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    /* ── APP LAYOUT ── */
+    .app-layout {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      position: relative;
+      z-index: 1;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      background: rgba(8, 9, 15, 0.9);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      height: 60px;
+      flex-shrink: 0;
+      /* Wails custom window drag region */
+      --wails-draggable: drag;
+    }
+
+    header * {
+      --wails-draggable: no-drag;
+    }
+
+    /* macOS specific adjustments for Wails inset traffic light buttons */
+    body.mac-os header {
+      padding-left: 80px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-name {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 850;
+      background: linear-gradient(90deg, #fff 0%, #54c0ff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-tag {
+      font-size: 0.72rem;
+      color: var(--text3);
+      font-weight: 400;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* Header Tabs Navigation */
+    .header-tabs {
+      display: flex;
+      gap: 6px;
+    }
+
+    .header-tab-btn {
+      padding: 6px 16px;
+      border-radius: 20px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text2);
+      font-family: var(--font-display);
+      font-weight: 550;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .header-tab-btn:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .header-tab-btn.active {
+      background: var(--neon-blue-soft);
+      border-color: var(--border-active);
+      color: #aadeff;
+    }
+
+    .header-tab-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      font-size: 0.75rem;
+      color: var(--text2);
+      background: rgba(16, 19, 38, 0.4);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--neon-blue);
+      box-shadow: 0 0 6px var(--neon-blue);
+      animation: blink 2s ease-in-out infinite;
+    }
+
+    .status-dot.active {
+      background: var(--green);
+      box-shadow: 0 0 6px var(--green);
+    }
+
+    .status-dot.busy {
+      background: var(--amber);
+      box-shadow: 0 0 6px var(--amber);
+      animation: blink 0.6s ease-in-out infinite;
+    }
+
+    @keyframes blink {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.3;
+      }
+    }
+
+    /* Main Content Area */
+    .main-content {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .tab-content {
+      display: none;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .tab-content.active {
+      display: flex;
+    }
+
+    /* ── STUDIO LAYOUT ── */
+    .studio-layout {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .studio-sidebar {
+      width: 360px;
+      border-right: 1px solid var(--border);
+      background: rgba(5, 5, 8, 0.4);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow-y: auto;
+      flex-shrink: 0;
+      padding: 20px;
+      gap: 20px;
+    }
+
+    .studio-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+      background: #090a10;
+    }
+
+    /* Sidebar Content Sections */
+    .sidebar-section-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text3);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .sidebar-section-label svg {
+      width: 13px;
+      height: 13px;
+      color: var(--neon-blue);
+    }
+
+    .sidebar-divider {
+      border-top: 1px solid var(--border);
+      padding-top: 16px;
+    }
+
+    /* ── SCRIPT CREATOR VIEW ── */
+    .script-creator-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 32px;
+      gap: 24px;
+      overflow-y: auto;
+      height: 100%;
+    }
+
+    .idle-title {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .idle-sub {
+      font-size: 0.88rem;
+      color: var(--text2);
+      max-width: 600px;
+      line-height: 1.6;
+    }
+
+    .recap-box {
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .recap-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .recap-label {
+      font-size: 0.62rem;
+      color: var(--text3);
+      text-transform: uppercase;
+      font-weight: 650;
+      letter-spacing: 0.5px;
+    }
+
+    .recap-value {
+      font-size: 0.78rem;
+      color: var(--cyan);
+      font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* ── ACTIVE WORKSPACE VIEW ── */
+    .workspace-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .workspace-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(0, 0, 0, 0.25);
+      flex-shrink: 0;
+    }
+
+    .workspace-title {
+      font-family: var(--font-display);
+      font-weight: 650;
+      font-size: 0.95rem;
+    }
+
+    .workspace-body {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .workspace-segments-col {
+      width: 400px;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow-y: auto;
+      background: rgba(5, 5, 8, 0.2);
+      padding: 16px;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .workspace-editor-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    /* Segment Card List */
+    .seg-card {
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      background: var(--surface);
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .seg-card:hover {
+      border-color: rgba(0, 162, 255, 0.2);
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .seg-card.active {
+      border-color: var(--border-active);
+      background: rgba(0, 162, 255, 0.06);
+    }
+
+    .seg-card.completed {
+      border-left: 3px solid var(--green);
+    }
+
+    .seg-card.error {
+      border-left: 3px solid var(--red);
+    }
+
+    .seg-card.generating {
+      border-left: 3px solid var(--amber);
+    }
+
+    .seg-head {
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .seg-num {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--text3);
+      background: rgba(255, 255, 255, 0.04);
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+
+    .seg-text {
+      font-size: 0.83rem;
+      line-height: 1.4;
+      padding: 0 14px 10px;
+      color: var(--text2);
+    }
+
+    .status-tag {
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+
+    .status-tag.pending {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text3);
+    }
+
+    .status-tag.generating {
+      background: rgba(255, 179, 0, 0.12);
+      color: var(--amber);
+    }
+
+    .status-tag.completed {
+      background: rgba(0, 230, 118, 0.12);
+      color: var(--green);
+    }
+
+    .status-tag.error {
+      background: rgba(255, 82, 82, 0.12);
+      color: var(--red);
+    }
+
+    .emotion-tag {
+      font-size: 0.68rem;
+      padding: 2px 7px;
+      border-radius: 4px;
+      color: var(--text2);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .wave-anim {
+      display: flex;
+      gap: 2px;
+      align-items: center;
+      height: 14px;
+    }
+
+    .wave-bar {
+      width: 2px;
+      background: var(--amber);
+      border-radius: 1px;
+      animation: wave 0.8s ease-in-out infinite alternate;
+    }
+
+    .wave-bar:nth-child(2) {
+      animation-delay: 0.15s;
+    }
+
+    .wave-bar:nth-child(3) {
+      animation-delay: 0.3s;
+    }
+
+    .wave-bar:nth-child(4) {
+      animation-delay: 0.45s;
+    }
+
+    @keyframes wave {
+      from {
+        height: 3px;
+      }
+
+      to {
+        height: 12px;
+      }
+    }
+
+    /* Segment Editor Overlay split columns */
+    .editor-overlay {
+      display: none;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    .editor-overlay.visible {
+      display: flex;
+    }
+
+    .editor-params-column {
+      width: 360px;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      overflow-y: auto;
+      gap: 14px;
+      flex-shrink: 0;
+      background: rgba(255, 255, 255, 0.005);
+    }
+
+    .editor-takes-column {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      overflow-y: auto;
+      gap: 16px;
+    }
+
+    .editor-head-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+      margin-bottom: 4px;
+      flex-shrink: 0;
+    }
+
+    .editor-head-title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+
+    /* Empty editor selection placeholder */
+    .empty-selection-placeholder {
+      flex: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text3);
+      font-size: 0.9rem;
+      gap: 10px;
+      padding: 30px;
+      text-align: center;
+      background: rgba(5, 5, 8, 0.1);
+    }
+
+    .empty-selection-placeholder svg {
+      width: 36px;
+      height: 36px;
+      opacity: 0.4;
+      color: var(--text3);
+    }
+
+    /* Sliders styling */
+    .slider-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .slider-head {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.72rem;
+      color: var(--text2);
+    }
+
+    .slider-val {
+      color: var(--cyan);
+      font-weight: 600;
+    }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.08);
+      outline: none;
+      padding: 0;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--neon-blue);
+      cursor: pointer;
+    }
+
+    /* Chunks and Candidate Takes List */
+    .takes-section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .takes-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .takes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
+    }
+
+    .take-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.02);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: all 0.2s;
+    }
+
+    .take-card.selected {
+      border-color: rgba(0, 230, 118, 0.35);
+      background: rgba(0, 230, 118, 0.04);
+    }
+
+    .seg-card.add-seg-card {
+      border: 1px dashed var(--border);
+      background: rgba(255, 255, 255, 0.005);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      gap: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border-radius: 11px;
+      margin-top: 4px;
+    }
+
+    .seg-card.add-seg-card:hover {
+      border-color: var(--neon-blue);
+      background: rgba(0, 162, 255, 0.04);
+      color: var(--text);
+    }
+
+    .seg-card.add-seg-card span {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text3);
+    }
+
+    .seg-card.add-seg-card:hover span {
+      color: var(--text);
+    }
+
+    .take-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .take-title {
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+
+    .take-score {
+      font-size: 0.72rem;
+      font-weight: 700;
+      background: rgba(0, 162, 255, 0.12);
+      color: #aadeff;
+      padding: 2px 7px;
+      border-radius: 5px;
+    }
+
+    .take-card.selected .take-score {
+      background: rgba(0, 230, 118, 0.15);
+      color: #a7ffeb;
+    }
+
+    .take-transcript {
+      font-size: 0.78rem;
+      color: var(--text2);
+      font-style: italic;
+      background: rgba(0, 0, 0, 0.25);
+      padding: 8px 10px;
+      border-radius: 6px;
+      min-height: 40px;
+      line-height: 1.4;
+    }
+
+    .metric {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .metric-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.65rem;
+      color: var(--text3);
+    }
+
+    .metric-bar {
+      height: 3px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .metric-fill {
+      height: 100%;
+      background: var(--neon-blue);
+      border-radius: 2px;
+    }
+
+    .take-card.selected .metric-fill {
+      background: var(--green);
+    }
+
+    .take-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 4px;
+    }
+
+    .play-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: var(--neon-blue);
+      border: none;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .play-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 10px rgba(0, 162, 255, 0.5);
+    }
+
+    .play-btn svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    /* Voice configuration tabs and elements */
+    .voice-source-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .vs-tab {
+      padding: 10px 6px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text2);
+      cursor: pointer;
+      font-family: var(--font);
+      font-size: 0.76rem;
+      font-weight: 550;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .vs-tab svg {
+      width: 16px;
+      height: 16px;
+      opacity: 0.5;
+    }
+
+    .vs-tab.active {
+      border-color: var(--border-active);
+      background: var(--neon-blue-soft);
+      color: #aadeff;
+    }
+
+    .vs-tab.active svg {
+      opacity: 1;
+      color: var(--neon-blue);
+    }
+
+    .vs-tab:hover:not(.active) {
+      border-color: rgba(255, 255, 255, 0.12);
+    }
+
+    .voice-preset-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .upload-zone {
+      border: 1.5px dashed rgba(0, 229, 255, 0.25);
+      border-radius: 10px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+      background: rgba(0, 229, 255, 0.03);
+    }
+
+    .upload-zone:hover {
+      border-color: rgba(0, 229, 255, 0.5);
+      background: rgba(0, 229, 255, 0.06);
+    }
+
+    .upload-zone svg {
+      width: 24px;
+      height: 24px;
+      color: var(--cyan);
+      opacity: 0.7;
+    }
+
+    .upload-zone-label {
+      font-size: 0.8rem;
+      color: var(--text2);
+    }
+
+    .upload-zone-sub {
+      font-size: 0.68rem;
+      color: var(--text3);
+    }
+
+    .upload-success {
+      border-color: rgba(0, 230, 118, 0.4);
+      background: rgba(0, 230, 118, 0.05);
+    }
+
+    .upload-success svg {
+      color: var(--green);
+      opacity: 1;
+    }
+
+    /* Form styling elements */
+    .form-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .form-row:last-child {
+      margin-bottom: 0;
+    }
+
+    label.fl {
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    textarea,
+    input[type=text],
+    select {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 10px 12px;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 0.82rem;
+      outline: none;
+      width: 100%;
+      transition: border-color 0.2s;
+    }
+
+    textarea:focus,
+    input[type=text]:focus,
+    select:focus {
+      border-color: rgba(0, 162, 255, 0.4);
+      box-shadow: 0 0 0 3px rgba(0, 162, 255, 0.08);
+    }
+
+    select option {
+      background: #0e1220;
+    }
+
+    .grid2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    /* Buttons styling */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--neon-blue) 0%, #004bb8 100%);
+      color: white;
+      width: 100%;
+      box-shadow: 0 4px 16px rgba(0, 162, 255, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 24px rgba(0, 162, 255, 0.45);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .btn-ghost {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      color: var(--text2);
+    }
+
+    .btn-ghost:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+    }
+
+    .btn-ghost:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #00c853, #0091ea);
+      color: white;
+      box-shadow: 0 4px 16px rgba(0, 200, 83, 0.25);
+    }
+
+    .btn-success:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 24px rgba(0, 200, 83, 0.4);
+    }
+
+    .btn-success:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 0.78rem;
+    }
+
+    .btn-icon {
+      padding: 8px;
+      border-radius: 7px;
+    }
+
+    /* Saved voice card & session card */
+    .card-surface {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .project-history-card {
+      transition: all 0.2s;
+    }
+
+    .project-history-card:hover {
+      border-color: rgba(0, 229, 255, 0.2) !important;
+      background: rgba(255, 255, 255, 0.03) !important;
+    }
+
+    /* ── BOTTOM PLAYER BAR (Natural flexbox flow at the bottom of studio-main) ── */
+    .bottom-bar {
+      border-top: 1px solid var(--border);
+      background: rgba(8, 9, 15, 0.95);
+      backdrop-filter: blur(16px);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      width: 100%;
+    }
+
+    .player-row {
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .player-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 200px;
+    }
+
+    .player-icon-box {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      background: rgba(0, 229, 255, 0.08);
+      border: 1px solid rgba(0, 229, 255, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--cyan);
+    }
+
+    .player-icon-box svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .player-info h4 {
+      font-family: var(--font-display);
+      font-size: 0.88rem;
+      font-weight: 600;
+    }
+
+    .player-info p {
+      font-size: 0.72rem;
+      color: var(--text2);
+    }
+
+    .player-center {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .seek-bg {
+      flex: 1;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 2px;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .seek-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--neon-blue), var(--cyan));
+      border-radius: 2px;
+      width: 0%;
+      position: relative;
+    }
+
+    .seek-fill::after {
+      content: '';
+      position: absolute;
+      right: -4px;
+      top: -3px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: white;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      transition: opacity 0.1s;
+    }
+
+    .seek-bg:hover .seek-fill::after {
+      opacity: 1;
+    }
+
+    .time-text {
+      font-size: 0.72rem;
+      color: var(--text3);
+      font-variant-numeric: tabular-nums;
+      min-width: 36px;
+    }
+
+    .player-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .main-play-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--neon-blue);
+      border: none;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 0 14px rgba(0, 162, 255, 0.3);
+    }
+
+    .main-play-btn:hover {
+      transform: scale(1.08);
+    }
+
+    .main-play-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .main-play-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .stitch-row {
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .log-panel {
+      padding: 8px 24px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.72rem;
+      color: var(--text2);
+      max-height: 70px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    .log-line {
+      line-height: 1.4;
+    }
+
+    .log-line.info {
+      color: #81c8ff;
+    }
+
+    .log-line.warn {
+      color: var(--amber);
+    }
+
+    .log-line.error {
+      color: var(--red);
+    }
+
+    .log-line.success {
+      color: var(--green);
+    }
+
+    /* Prosodic Chunks / Phrase Comping styles */
+    .chunks-section {
+      background: rgba(255, 255, 255, 0.015);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      padding: 12px 16px;
+    }
+
+    .chunks-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chunk-chip {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 8px 12px;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 140px;
+      flex: 1 1 200px;
+    }
+
+    .chunk-text-span {
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .mini-btn-group {
+      display: flex;
+      gap: 3px;
+      flex-wrap: wrap;
+    }
+
+    .mini-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text2);
+      font-size: 0.68rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .mini-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: var(--text);
+    }
+
+    .mini-btn.active {
+      background: var(--neon-blue);
+      border-color: rgba(0, 162, 255, 0.5);
+      color: white;
+    }
+
+    .mini-btn.overridden {
+      background: #2563eb;
+      border-color: #3b82f6;
+      color: white;
+    }
+
+    .mini-btn.auto-btn {
+      font-weight: 500;
+      border-style: dashed;
+    }
+
+    .mini-btn.auto-btn.active {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: rgba(16, 185, 129, 0.3);
+      color: #34d399;
+    }
+
+    /* ── CUSTOM MODAL DIALOG ── */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(4, 5, 10, 0.75);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      animation: fadeIn 0.2s ease-out;
+    }
+
+    .modal-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      width: 420px;
+      max-width: 90%;
+      box-shadow: var(--shadow), var(--glow);
+      overflow: hidden;
+      animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h3 {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--text);
+    }
+
+    .modal-close-btn {
+      background: transparent;
+      border: none;
+      color: var(--text2);
+      font-size: 1.5rem;
+      cursor: pointer;
+      line-height: 1;
+      padding: 4px;
+      transition: color 0.15s;
+    }
+
+    .modal-close-btn:hover {
+      color: var(--text);
+    }
+
+    .modal-body {
+      padding: 20px;
+      font-size: 0.88rem;
+      color: var(--text2);
+      line-height: 1.5;
+    }
+
+    .modal-footer {
+      padding: 12px 20px;
+      background: rgba(5, 5, 8, 0.4);
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    @keyframes slideUp {
+      from {
+        transform: translateY(16px);
+      }
+
+      to {
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes spin {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .spin {
+      animation: spin 1s linear infinite;
+      display: inline-block;
+    }
+
+    /* Custom Voice Roadmap Styles */
+    .cv-step-card {
+      transition: all 0.25s ease;
+    }
+
+    .cv-step-card:hover {
+      border-color: var(--border-active);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+
+    .cv-step-card.active-stage {
+      border-color: var(--cyan) !important;
+      background: rgba(0, 229, 255, 0.04) !important;
+      box-shadow: 0 0 16px rgba(0, 229, 255, 0.15);
+    }
+
+    .cv-step-card.done-stage {
+      border-color: var(--green) !important;
+      background: rgba(0, 230, 118, 0.02) !important;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- APP VIEWPORT WRAPPER -->
+  <div class="app-layout">
+
+    <!-- HEADER -->
+    <header>
+      <div class="brand">
+        <img src="./logo_transparent.png" alt="Tuti Logo" style="height: 24px; width: 24px; object-fit: contain;" />
+      </div>
+
+      <!-- TABS IN HEADER -->
+      <div class="header-tabs">
+        <button class="header-tab-btn active" id="nav-studio" onclick="switchTab('studio')">
+          <i data-lucide="file-text"></i>
+          <span>Studio</span>
+        </button>
+        <button class="header-tab-btn" id="nav-models" onclick="switchTab('models')">
+          <i data-lucide="download-cloud"></i>
+          <span>Models</span>
+        </button>
+        <button class="header-tab-btn" id="nav-voices" onclick="switchTab('voices')">
+          <i data-lucide="bookmark"></i>
+          <span>Voices Library</span>
+        </button>
+        <button class="header-tab-btn" id="nav-settings" onclick="switchTab('settings')">
+          <i data-lucide="activity"></i>
+          <span>Diagnostics & Logs</span>
+        </button>
+      </div>
+
+      <div class="header-right">
+        <div class="status-pill">
+          <div class="status-dot" id="status-dot"></div>
+          <span id="status-text">Connecting...</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT AREA -->
+    <div class="main-content">
+
+      <!-- ════════ STUDIO TAB CONTENT ════════ -->
+      <div class="tab-content active" id="tab-content-studio">
+        <div class="studio-layout">
+
+          <!-- Left studio sidebar (width: 360px, scrolls independently) -->
+          <aside class="studio-sidebar">
+
+            <!-- Session History Section (At the top) -->
+            <div>
+              <div class="sidebar-section-label"><i data-lucide="history"></i> Video History</div>
+              <div id="project-history-list"
+                style="display:flex; flex-direction:column; gap:6px; max-height: 180px; overflow-y: auto; padding-right:4px;">
+                <div style="font-size:0.72rem; color:var(--text3)">No past sessions found.</div>
+              </div>
+            </div>
+
+            <!-- Voice Configuration Section -->
+            <div class="sidebar-divider">
+              <div class="sidebar-section-label"><i data-lucide="mic-2"></i> Voice Configuration</div>
+
+              <div class="voice-source-tabs">
+                <button class="vs-tab active" id="tab-preset" onclick="setVoiceMode('preset')">
+                  <i data-lucide="user"></i>
+                  <span>Preset</span>
+                </button>
+                <button class="vs-tab" id="tab-clone" onclick="setVoiceMode('clone')">
+                  <i data-lucide="upload-cloud"></i>
+                  <span>Clone</span>
+                </button>
+                <button class="vs-tab" id="tab-design" onclick="setVoiceMode('design')">
+                  <i data-lucide="wand-2"></i>
+                  <span>Design</span>
+                </button>
+              </div>
+
+              <!-- Preset Options -->
+              <div id="preset-options">
+                <div class="voice-preset-row">
+                  <div class="form-row">
+                    <label class="fl">Speaker</label>
+                    <select id="speaker-input">
+                      <option value="eric">Eric (M)</option>
+                      <option value="ryan">Ryan (M)</option>
+                      <option value="dylan">Dylan (M)</option>
+                      <option value="aiden">Aiden (M)</option>
+                      <option value="uncle_fu">Uncle Fu (M)</option>
+                      <option value="vivian">Vivian (F)</option>
+                      <option value="serena">Serena (F)</option>
+                      <option value="ono_anna">Ono Anna (F)</option>
+                      <option value="sohee">Sohee (F)</option>
+                    </select>
+                  </div>
+                  <!-- Model seçimi otomatik: CustomVoice-1.7B (hidden input) -->
+                  <input type="hidden" id="model-size-input" value="mlx-community/Qwen3-TTS-12Hz-1.7B-CustomVoice-bf16">
+                </div>
+              </div>
+
+              <!-- Clone Options — Speaker Space Interpolation -->
+              <div id="clone-options" style="display:none">
+
+                <!-- Method badge -->
+                <div
+                  style="display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:8px; background:rgba(0,229,255,0.04); border:1px solid rgba(0,229,255,0.12); margin-bottom:12px;">
+                  <i data-lucide="cpu" style="width:13px; height:13px; color:var(--cyan); flex-shrink:0;"></i>
+                  <div>
+                    <div
+                      style="font-size:0.7rem; font-weight:700; color:var(--cyan); text-transform:uppercase; letter-spacing:0.04em;">
+                      Speaker Space Interpolation</div>
+                    <div style="font-size:0.65rem; color:var(--text3); margin-top:1px;">BASE encodes ref → inject into
+                      CustomVoice at inference</div>
+                  </div>
+                </div>
+
+                <!-- Upload zone -->
+                <input type="file" id="ref-file-input" accept=".wav,.mp3" style="display:none"
+                  onchange="handleFileUpload(this)">
+                <div class="upload-zone" id="upload-zone" onclick="document.getElementById('ref-file-input').click()">
+                  <i data-lucide="upload-cloud"></i>
+                  <div class="upload-zone-label">Click to upload voice sample</div>
+                  <div class="upload-zone-sub">WAV or MP3 · Min 5s · Quiet recording recommended</div>
+                </div>
+                <input type="hidden" id="ref-audio-input" value="">
+                <!-- ref-text-input kept hidden for API compatibility -->
+                <input type="hidden" id="ref-text-input" value="">
+                <!-- model-size-clone-input hidden: BASE used for encode, CustomVoice for inference -->
+                <input type="hidden" id="model-size-clone-input"
+                  value="mlx-community/Qwen3-TTS-12Hz-1.7B-CustomVoice-bf16">
+
+                <!-- Alpha slider — interpolation strength -->
+                <div class="slider-wrap" style="margin-top:14px;">
+                  <div class="slider-head">
+                    <span style="display:flex; align-items:center; gap:5px;">
+                      <i data-lucide="blend" style="width:11px; height:11px; color:var(--cyan);"></i>
+                      Identity Strength (alpha)
+                    </span>
+                    <span class="slider-val" id="val-clone-alpha">1.00</span>
+                  </div>
+                  <input type="range" id="slider-clone-alpha" min="0" max="1" step="0.05" value="1.0"
+                    oninput="document.getElementById('val-clone-alpha').textContent = Number(this.value).toFixed(2); document.getElementById('clone-alpha-input').value = this.value;"
+                    style="accent-color: var(--cyan);">
+                  <div
+                    style="display:flex; justify-content:space-between; font-size:0.6rem; color:var(--text3); margin-top:2px;">
+                    <span>0.0 — preset only</span>
+                    <span>1.0 — full ref identity</span>
+                  </div>
+                </div>
+                <input type="hidden" id="clone-alpha-input" value="1.0">
+
+                <!-- Clone Speaker Gender selection -->
+                <div class="form-row" style="margin-top:10px;">
+                  <label class="fl" style="display:flex; align-items:center; gap:5px;">
+                    <i data-lucide="user" style="width:10px; height:10px;"></i>
+                    Clone Voice Gender
+                  </label>
+                  <select id="clone-speaker-input" style="font-size:0.78rem;">
+                    <option value="ryan" selected>Male (Ryan)</option>
+                    <option value="serena">Female (Serena)</option>
+                  </select>
+                </div>
+
+                <!-- Top-K centroid quality -->
+                <div class="form-row" style="margin-top:10px;">
+                  <label class="fl" style="display:flex; align-items:center; gap:5px;">
+                    <i data-lucide="filter" style="width:10px; height:10px;"></i>
+                    Centroid Quality (Top-K segments)
+                  </label>
+                  <select id="clone-topk-input" style="font-size:0.78rem;">
+                    <option value="1">Top-1 (fastest, less robust)</option>
+                    <option value="2">Top-2</option>
+                    <option value="3" selected>Top-3 (recommended)</option>
+                    <option value="5">Top-5 (highest quality, slower)</option>
+                  </select>
+                </div>
+
+              </div>
+
+              <!-- Design Options -->
+              <div id="design-options" style="display:none">
+                <div class="form-row">
+                  <label class="fl">Voice Description prompt</label>
+                  <textarea id="design-prompt-input" rows="3"
+                    placeholder="A warm, confident male narrator with a deep voice and relaxed pacing..."></textarea>
+                </div>
+                <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px">
+                  <button class="tbadge highlight" style="cursor:pointer;border:none"
+                    onclick="document.getElementById('design-prompt-input').value='A warm, confident male narrator with a deep voice and relaxed, engaging pacing.'">🎙️
+                    Narrator</button>
+                  <button class="tbadge highlight" style="cursor:pointer;border:none"
+                    onclick="document.getElementById('design-prompt-input').value='A cheerful young female voice with high pitch, energetic tone, and expressive delivery.'">✨
+                    Energetic</button>
+                  <button class="tbadge highlight" style="cursor:pointer;border:none"
+                    onclick="document.getElementById('design-prompt-input').value='A calm, professional male voice with clear articulation and authoritative presence.'">📰
+                    Anchor</button>
+                </div>
+                <div class="form-row">
+                  <label class="fl">Model</label>
+                  <select id="model-size-design-input" style="font-family: monospace; font-size: 0.72rem;">
+                    <option value="mlx-community/Qwen3-TTS-12Hz-1.7B-VoiceDesign-bf16" selected>
+                      mlx-community/Qwen3-TTS-12Hz-1.7B-VoiceDesign-bf16</option>
+                    <option value="mlx-community/Qwen3-TTS-12Hz-0.6B-VoiceDesign-bf16">
+                      mlx-community/Qwen3-TTS-12Hz-0.6B-VoiceDesign-bf16</option>
+                  </select>
+                </div>
+              </div>
+
+              <div id="sft-status-container"
+                style="display:none; margin-top:12px; padding:10px 14px; border-radius:8px; border:1px solid rgba(0, 229, 255, 0.15); background:rgba(0, 229, 255, 0.04); align-items:center; gap:8px;">
+                <i data-lucide="zap"
+                  style="width:14px; height:14px; color:var(--cyan); animation: blink 2s ease-in-out infinite;"></i>
+                <span style="font-size:0.75rem; color:var(--text); font-weight:600;">SFT LoRA Adapter Active:</span>
+                <span id="sft-active-name"
+                  style="font-size:0.75rem; color:var(--cyan); font-family:monospace; font-weight:bold;">--</span>
+              </div>
+
+              <!-- Save Voice button -->
+              <button class="btn btn-ghost btn-sm" onclick="saveCurrentTimbre()"
+                style="width:100%; margin-top:12px; margin-bottom:12px;">
+                <i data-lucide="save"></i> Save Current Voice
+              </button>
+
+              <!-- Quick Registry / Saved Voices List -->
+              <div
+                style="border-top: 1px solid var(--border); padding-top: 12px; display: flex; flex-direction: column; gap: 8px;">
+                <div class="sidebar-section-label"
+                  style="font-size: 0.68rem; margin-bottom: 2px; text-transform: uppercase; color: var(--text3); display: flex; align-items: center; gap: 6px;">
+                  <i data-lucide="bookmark" style="width:12px; height:12px; color:var(--neon-blue)"></i> Saved Voices
+                </div>
+                <div id="timbre-list"
+                  style="display:flex; flex-direction:column; gap:8px; max-height: 180px; overflow-y: auto; padding-right: 4px;">
+                  <!-- Populated by JS -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Generation Parameters Section -->
+            <div class="sidebar-divider">
+              <div class="sidebar-section-label"><i data-lucide="sliders-horizontal"></i> Generation Parameters</div>
+
+              <div class="grid2">
+                <div class="form-row">
+                  <label class="fl">Backend</label>
+                  <select id="backend-input">
+                    <option value="mlx" selected>MLX (Apple)</option>
+                    <option value="pytorch">PyTorch</option>
+                  </select>
+                </div>
+                <div class="form-row">
+                  <label class="fl">Takes</label>
+                  <select id="takes-input">
+                    <option value="3" selected>3 Takes</option>
+                    <option value="4">4 Takes</option>
+                    <option value="5">5 Takes</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="grid2" style="margin-top:10px">
+                <div class="form-row">
+                  <label class="fl">Tone</label>
+                  <select id="tone-input">
+                    <option value="natural" selected>Natural</option>
+                    <option value="energetic">Energetic</option>
+                    <option value="calm">Calm</option>
+                    <option value="warm">Warm</option>
+                    <option value="serious">Serious</option>
+                  </select>
+                </div>
+                <div class="form-row">
+                  <label class="fl">Segmenter</label>
+                  <select id="llm-backend-input">
+                    <option value="rule_based" selected>Rule-Based</option>
+                    <option value="ollama">Ollama AI</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Ollama details -->
+              <div id="ollama-row" style="display:none; margin-top:10px;">
+                <div class="form-row">
+                  <label class="fl">Ollama Model</label>
+                  <select id="ollama-model-input">
+                    <option value="qwen3:8b">qwen3:8b</option>
+                  </select>
+                  <div style="font-size:0.68rem; color:var(--text3); margin-top:4px;" id="ollama-status">Checking
+                    Ollama...</div>
+                </div>
+              </div>
+            </div>
+
+          </aside>
+
+          <!-- Right main content area (scrolls internally) -->
+          <div class="studio-main">
+
+            <!-- ── SCRIPT CREATOR VIEW (Shown when no project loaded) ── -->
+            <div class="script-creator-panel" id="create-panel" style="display: flex;">
+              <div class="idle-title">Create Speech Plan</div>
+              <div class="idle-sub">
+                Paste your voiceover script. The system will slice it into prosodic segments, align phonetic stresses,
+                generate candidate takes, and master the final mix.
+              </div>
+
+              <!-- Text area -->
+              <div class="form-row" style="flex:1; display:flex; flex-direction:column; margin-bottom:0">
+                <label class="fl" style="margin-bottom:8px;">Narration Script Text</label>
+                <textarea id="script-input"
+                  style="flex:1; min-height:280px; resize:none; font-size:0.92rem; line-height:1.5; padding:16px;"
+                  placeholder="Paste your script text here... Each sentence becomes a speech segment. Emoji and punctuation styles are supported."></textarea>
+              </div>
+
+              <!-- Recap Card -->
+              <div class="recap-box">
+                <div class="recap-item">
+                  <span class="recap-label">Voice Setup</span>
+                  <span class="recap-value" id="recap-voice">Preset: Eric</span>
+                </div>
+                <div class="recap-item">
+                  <span class="recap-label">Synthesis Engine</span>
+                  <span class="recap-value" id="recap-backend">MLX Engine</span>
+                </div>
+                <div class="recap-item">
+                  <span class="recap-label">Comping Settings</span>
+                  <span class="recap-value" id="recap-takes">3 Takes / Natural</span>
+                </div>
+              </div>
+
+              <button class="btn btn-primary" id="btn-compile" style="height:48px; font-size:0.95rem;">
+                <i data-lucide="play-circle"></i>
+                Compile Speech Plan
+              </button>
+            </div>
+
+            <!-- ── ACTIVE WORKSPACE VIEW (Shown when project loaded) ── -->
+            <div class="workspace-container" id="workspace" style="display: none;">
+
+              <!-- Workspace Header -->
+              <div class="workspace-header">
+                <div class="workspace-title" id="workspace-title">Speech Segments</div>
+                <div style="display: flex; gap: 8px;">
+                  <button class="btn btn-ghost btn-sm action-new-project" title="New Project">
+                    <i data-lucide="plus"></i> New
+                  </button>
+                  <button class="btn btn-primary btn-sm" id="btn-generate-all" title="Generate All">
+                    <i data-lucide="zap"></i> Generate All
+                  </button>
+                </div>
+              </div>
+
+              <!-- Workspace Columns Body -->
+              <div class="workspace-body">
+
+                <!-- Left Segments Column -->
+                <div class="workspace-segments-col" id="segments-area">
+                  <!-- Populated by JS -->
+                </div>
+
+                <!-- Right Editor / candidate takes panel -->
+                <div class="workspace-editor-col">
+
+                  <!-- Editor Overlay (Shown when a segment is selected) -->
+                  <div class="editor-overlay" id="editor-panel">
+
+                    <!-- Left parameters editor column -->
+                    <div class="editor-params-column">
+                      <div class="editor-head-row">
+                        <div class="editor-head-title" id="editor-title">Segment #1</div>
+                        <span class="emotion-tag" id="editor-emotion">Happy</span>
+                      </div>
+
+                      <div class="form-row">
+                        <label class="fl">Segment Text</label>
+                        <textarea id="edit-text" rows="3"
+                          style="font-size:0.85rem; line-height:1.4; resize:vertical;"></textarea>
+                      </div>
+
+                      <div class="form-row" id="instruct-wrap">
+                        <label class="fl">TTS Style Instruction</label>
+                        <textarea id="edit-instruct" rows="3"
+                          placeholder="Describe narration pacing and intonation style..."
+                          style="font-size:0.82rem; line-height:1.4; resize:vertical;"></textarea>
+                      </div>
+
+                      <div class="slider-wrap">
+                        <div class="slider-head"><span>Stress / Emphasis</span><span class="slider-val"
+                            id="val-stress">0.70</span></div>
+                        <input type="range" id="slider-stress" min="0" max="1" step="0.05" value="0.7">
+                      </div>
+
+                      <div class="slider-wrap">
+                        <div class="slider-head"><span>Speed Rate</span><span class="slider-val"
+                            id="val-speed">1.00×</span></div>
+                        <input type="range" id="slider-speed" min="0.8" max="1.2" step="0.05" value="1.0">
+                      </div>
+
+                      <div class="slider-wrap">
+                        <div class="slider-head"><span>Pitch Shift</span><span class="slider-val"
+                            id="val-pitch">0.00</span></div>
+                        <input type="range" id="slider-pitch" min="-5" max="5" step="0.1" value="0.0">
+                      </div>
+
+                      <div class="slider-wrap">
+                        <div class="slider-head"><span>Base Temperature</span><span class="slider-val"
+                            id="val-temperature">0.60</span></div>
+                        <input type="range" id="slider-temperature" min="0.1" max="1" step="0.05" value="0.6">
+                      </div>
+
+                      <div class="slider-wrap">
+                        <div class="slider-head"><span>Pause After</span><span class="slider-val"
+                            id="val-pause">0.30s</span></div>
+                        <input type="range" id="slider-pause" min="0" max="2" step="0.1" value="0.3">
+                      </div>
+
+                      <div class="slider-wrap" id="lora-strength-wrap">
+                        <div class="slider-head"><span>LoRA Strength (Adaptör Gücü)</span><span class="slider-val"
+                            id="val-lora-strength">0.75</span></div>
+                        <input type="range" id="slider-lora-strength" min="0.0" max="1.0" step="0.05" value="0.75">
+                      </div>
+
+                      <div class="grid2">
+                        <div class="form-row">
+                          <label class="fl">Intonation Trend</label>
+                          <select id="select-intonation">
+                            <option value="stable" selected>Stable</option>
+                            <option value="rising">Rising</option>
+                            <option value="falling">Falling</option>
+                          </select>
+                        </div>
+                        <div class="form-row">
+                          <label class="fl">Vowel Stretch</label>
+                          <select id="select-vowel">
+                            <option value="normal" selected>Normal</option>
+                            <option value="low">Low (Crisp)</option>
+                            <option value="high">High (Expressive)</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div id="advanced-settings-wrap"
+                        style="display:flex; flex-direction:column; gap:10px; border:1px solid var(--border); padding:10px; border-radius:10px; background:rgba(0,0,0,0.15);">
+                        <!-- Thinking Mode -->
+                        <label id="thinking-wrap"
+                          style="display:flex; align-items:center; gap:8px; font-size:0.75rem; cursor:pointer; color:var(--text2); margin:0;">
+                          <input type="checkbox" id="check-thinking" style="cursor:pointer; margin:0;">
+                          <span>Enable Thinking Mode (TTS Reasoning)</span>
+                        </label>
+
+                        <!-- Seed Lock -->
+                        <div id="seed-lock-wrap"
+                          style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+                          <label
+                            style="display:flex; align-items:center; gap:8px; font-size:0.75rem; cursor:pointer; color:var(--text2); flex-shrink:0; margin:0;">
+                            <input type="checkbox" id="check-seed-lock" style="cursor:pointer; margin:0;">
+                            <span>Lock Generation Seed</span>
+                          </label>
+                          <input type="number" id="input-locked-seed" placeholder="Seed (e.g. 42)"
+                            style="width:100px; padding:4px 8px; font-size:0.72rem; border-radius:6px; border:1px solid var(--border); background:rgba(0,0,0,0.3); color:var(--text);"
+                            disabled>
+                        </div>
+                      </div>
+
+                      <div class="editor-actions" style="display:flex; flex-direction:column; gap:8px; margin-top:8px;">
+                        <button class="btn btn-ghost btn-sm" id="btn-save-params" style="display: none;">
+                          <i data-lucide="save"></i> Save Parameters
+                        </button>
+                        <button class="btn btn-primary btn-sm" id="btn-generate-takes" style="width:100%;">
+                          <i data-lucide="cpu"></i> Generate Takes
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Right chunks & takes list column -->
+                    <div class="editor-takes-column">
+                      <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div class="takes-label" style="margin-bottom:0;">Prosodic comping &amp; takes</div>
+                        <button class="btn btn-ghost btn-sm btn-icon" id="btn-close-editor" title="Close editor"
+                          style="padding:4px; opacity:0.6; border:none; background:transparent">
+                          <i data-lucide="x"></i>
+                        </button>
+                      </div>
+
+                      <!-- Prosodic Chunks Map -->
+                      <div class="chunks-section" id="chunks-section"
+                        style="display:none; border:1px solid var(--border); border-radius:10px; background:rgba(0,0,0,0.2);">
+                        <div class="takes-label" style="margin-bottom:8px; font-size:0.7rem; color:var(--text2);">
+                          Prosodic Chunks (Hybrid Comping Map)</div>
+                        <div class="chunks-container" id="chunks-container">
+                          <!-- Populated by JS -->
+                        </div>
+                      </div>
+
+                      <!-- Candidate Takes -->
+                      <div class="takes-section">
+                        <div class="takes-label">Candidate Takes</div>
+                        <div class="takes-grid" id="takes-grid">
+                          <!-- Populated by JS -->
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  <!-- Empty Selection State (Shown when no segment is selected) -->
+                  <div class="empty-selection-placeholder" id="empty-selection-state" style="display: flex;">
+                    <i data-lucide="align-left"></i>
+                    <p>Please select a segment from the left to edit and review candidate takes.</p>
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+
+            <!-- ── BOTTOM PLAYER BAR (Cleanly docked inside studio-main) ── -->
+            <div class="bottom-bar" id="bottom-bar" style="display:none">
+
+              <!-- Player -->
+              <div class="player-row">
+                <div class="player-left">
+                  <div class="player-icon-box"><i data-lucide="music-2"></i></div>
+                  <div class="player-info">
+                    <h4>Final Audio Output</h4>
+                    <p id="player-sub">Ready to stitch</p>
+                  </div>
+                </div>
+                <div class="player-center">
+                  <button class="main-play-btn" id="btn-play" disabled><i data-lucide="play"
+                      id="play-icon"></i></button>
+                  <span class="time-text" id="time-cur">0:00</span>
+                  <div class="seek-bg" id="seek-bg">
+                    <div class="seek-fill" id="seek-fill"></div>
+                  </div>
+                  <span class="time-text" id="time-dur">0:00</span>
+                </div>
+                <div class="player-right">
+                  <!-- Output Speed Slider
+                  <div
+                    style="display:flex; align-items:center; gap:6px; margin-right:12px; background:rgba(0,0,0,0.2); border:1px solid var(--border); border-radius:8px; padding:4px 10px;">
+                    <i data-lucide="gauge" style="width:12px; height:12px; color:var(--cyan); flex-shrink:0;"></i>
+                    <span style="font-size:0.68rem; color:var(--text3); white-space:nowrap;">Speed</span>
+                    <input type="range" id="slider-output-speed" min="0.7" max="1.5" step="0.05" value="1.0"
+                      style="width:80px; accent-color:var(--cyan); cursor:pointer;"
+                      title="Output speed (0.7x – 1.5x). Uses Rubber Band studio algorithm.">
+                    <span id="val-output-speed"
+                      style="font-size:0.7rem; color:var(--cyan); font-family:monospace; min-width:30px;">1.0×</span>
+                  </div>
+                  -->
+                  <span style="font-size:0.75rem; color:var(--text3); display:inline-block; margin-right:8px;"
+                    id="stitch-status">Generate all segments first.</span>
+                  <button class="btn btn-success btn-sm" id="btn-stitch" disabled
+                    style="padding: 4px 10px; font-size:0.75rem; border-radius:6px; min-height: 28px; line-height: 1; display: inline-flex; align-items: center; gap: 4px; margin-right: 4px;">
+                    <i data-lucide="activity" style="width:12px; height:12px;"></i> Stitch &amp; Master
+                  </button>
+                  <a id="btn-download" class="btn btn-ghost btn-sm btn-icon" style="display:none" title="Download WAV">
+                    <i data-lucide="download"></i>
+                  </a>
+                </div>
+              </div>
+
+              <!-- Log console -->
+              <div class="log-panel" id="log-panel" style="display:none">
+                <div class="log-line info">System ready. Select tab, configure speaker, and write script.</div>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ════════ MODELS TAB CONTENT ════════ -->
+      <div class="tab-content" id="tab-content-models" style="padding: 24px; overflow-y: auto;">
+        <div
+          style="max-width: 1040px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; padding-bottom: 40px;">
+          <div>
+            <h2
+              style="font-family:var(--font-display); font-weight:750; font-size:1.6rem; color:var(--text); margin-bottom:6px;">
+              Model Downloader & Manager
+            </h2>
+            <p style="font-size:0.88rem; color:var(--text2);">
+              Tuti uses various Hugging Face models for Preset voices, Voice Cloning, and Voice Design. Check their cache status and download them below.
+            </p>
+          </div>
+
+          <!-- Clone Voice Section -->
+          <div class="card-surface" style="display:flex; flex-direction:column; gap:16px;">
+            <div class="section-label" style="margin-bottom:0; display:flex; align-items:center; gap:8px;">
+              <i data-lucide="mic-2" style="color:var(--neon-blue); width:18px; height:18px;"></i>
+              <span style="font-family:var(--font-display); font-weight:700; font-size:1.1rem; color:var(--text);">Voice Cloning</span>
+            </div>
+            <p style="font-size:0.8rem; color:var(--text2); margin-top:-8px; line-height:1.4;">
+              <i data-lucide="info" style="display:inline-block; width:12px; height:12px; vertical-align:middle; margin-right:3px;"></i>
+              Two models are used simultaneously when cloning voices: the <strong>Base</strong> model that extracts centroids from reference audio, and the <strong>CustomVoice</strong> model that performs the synthesis.
+            </p>
+            <div id="models-list-clone" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap:16px;">
+              <!-- Dynamic content populated by models.js -->
+            </div>
+          </div>
+
+          <!-- Preset Voice Section -->
+          <div class="card-surface" style="display:flex; flex-direction:column; gap:16px;">
+            <div class="section-label" style="margin-bottom:0; display:flex; align-items:center; gap:8px;">
+              <i data-lucide="user" style="color:var(--cyan); width:18px; height:18px;"></i>
+              <span style="font-family:var(--font-display); font-weight:700; font-size:1.1rem; color:var(--text);">Preset Voices</span>
+            </div>
+            <p style="font-size:0.8rem; color:var(--text2); margin-top:-8px; line-height:1.4;">
+              The <strong>CustomVoice</strong> model is used for preset voices and SFT LoRA adapters.
+            </p>
+            <div id="models-list-preset" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap:16px;">
+              <!-- Dynamic content populated by models.js -->
+            </div>
+          </div>
+
+          <!-- Voice Design Section -->
+          <div class="card-surface" style="display:flex; flex-direction:column; gap:16px;">
+            <div class="section-label" style="margin-bottom:0; display:flex; align-items:center; gap:8px;">
+              <i data-lucide="wand-2" style="color:var(--green); width:18px; height:18px;"></i>
+              <span style="font-family:var(--font-display); font-weight:700; font-size:1.1rem; color:var(--text);">Voice Design</span>
+            </div>
+            <p style="font-size:0.8rem; color:var(--text2); margin-top:-8px; line-height:1.4;">
+              The <strong>VoiceDesign</strong> model is used to generate new voices from prompts (MLX/Apple Silicon only).
+            </p>
+            <div id="models-list-design" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap:16px;">
+              <!-- Dynamic content populated by models.js -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════ VOICES TAB CONTENT ════════ -->
+      <div class="tab-content" id="tab-content-voices" style="padding: 24px; overflow-y: auto;">
+        <div
+          style="max-width: 1040px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; padding-bottom: 40px;">
+          <div>
+            <h2
+              style="font-family:var(--font-display); font-weight:750; font-size:1.6rem; color:var(--text); margin-bottom:6px;">
+              Voices Library</h2>
+            <p style="font-size:0.88rem; color:var(--text2);">Browse and manage your saved voice timbres. Loaded voices
+              can be loaded directly into your active Studio compilation settings.</p>
+          </div>
+
+          <div class="card-surface" style="display:flex; flex-direction:column; gap:16px;">
+            <div class="section-label" style="margin-bottom:0;"><i data-lucide="bookmark"></i> Registered Timbres</div>
+
+            <div id="timbre-list-library"
+              style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:12px;">
+              <div style="font-size:0.75rem; color:var(--text3); grid-column: 1 / -1;">No saved voices found. Go to the
+                Studio tab to configure and save a voice profile.</div>
+            </div>
+          </div>
+
+          <!-- Divider -->
+          <div style="border-top: 1px solid var(--border); margin: 16px 0; padding-top: 24px;"></div>
+
+          <!-- Fine-Tune Voice Profile Section -->
+          <div>
+            <h3
+              style="font-family: var(--font-display); font-weight: 800; font-size: 1.4rem; color: var(--text); margin-bottom: 6px; background: linear-gradient(135deg, #aadeff 0%, var(--cyan) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+              Fine-Tune Voice Profile
+            </h3>
+            <p
+              style="font-size: 0.84rem; color: var(--text2); max-width: 750px; line-height: 1.5; margin-bottom: 20px;">
+              Select a registered voice profile from your library to start Target-Speaker Adaptation (SFT) fine-tuning.
+            </p>
+          </div>
+
+          <!-- Fine-Tune Config and Log Console Layout Grid -->
+          <div style="display: grid; grid-template-columns: 1fr 1.2fr 0.9fr; gap: 24px; align-items: start;">
+
+            <!-- Config Column -->
+            <div class="card-surface" style="display: flex; flex-direction: column; gap: 16px;">
+              <div class="form-row">
+                <label class="fl">Select Saved Voice</label>
+                <select id="finetune-select-voice">
+                  <option value="">-- No Saved Voices Loaded --</option>
+                </select>
+              </div>
+
+              <div class="form-row">
+                <label class="fl">Fine-Tuning Base Model</label>
+                <select id="finetune-model-id" style="font-family: monospace; font-size: 0.72rem;">
+                  <option value="mlx-community/Qwen3-TTS-12Hz-1.7B-CustomVoice-bf16" selected>
+                    mlx-community/Qwen3-TTS-12Hz-1.7B-CustomVoice-bf16 (Recommended)</option>
+                  <option value="mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-bf16">
+                    mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-bf16</option>
+                  <option value="mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16">
+                    mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16</option>
+                  <option value="mlx-community/Qwen3-TTS-12Hz-0.6B-Base-bf16">
+                    mlx-community/Qwen3-TTS-12Hz-0.6B-Base-bf16</option>
+                </select>
+              </div>
+
+              <div class="form-row">
+                <label class="fl">Fine-Tuning Method</label>
+                <select id="finetune-method">
+                  <option value="lora" selected>LoRA SFT (Apple Silicon MLX)</option>
+                  <option value="full">Full Parameter SFT (PyTorch / GPU)</option>
+                </select>
+              </div>
+
+              <div class="grid2">
+                <div class="form-row">
+                  <label class="fl">Learning Rate</label>
+                  <div
+                    style="display: flex; gap: 4px; align-items: center; background: rgba(0,0,0,0.15); border: 1px solid var(--border); border-radius: 6px; padding: 2px 4px; width: 100%;">
+                    <button class="btn btn-ghost" onclick="adjustFinetuneLR(-1)"
+                      style="padding: 2px 8px; min-width: 24px; height: 26px; border: none; font-weight: bold; font-size: 0.85rem; background: transparent;">-</button>
+                    <input type="text" id="finetune-lr" value="1e-5" readonly
+                      style="flex: 1; text-align: center; font-family: monospace; background: transparent; border: none; padding: 0; color: var(--text); font-size: 0.8rem; outline: none; width: 100%;" />
+                    <button class="btn btn-ghost" onclick="adjustFinetuneLR(1)"
+                      style="padding: 2px 8px; min-width: 24px; height: 26px; border: none; font-weight: bold; font-size: 0.85rem; background: transparent;">+</button>
+                  </div>
+                </div>
+                <div class="form-row">
+                  <label class="fl">Training Steps</label>
+                  <div
+                    style="display: flex; gap: 4px; align-items: center; background: rgba(0,0,0,0.15); border: 1px solid var(--border); border-radius: 6px; padding: 2px 4px; width: 100%;">
+                    <button class="btn btn-ghost" onclick="adjustFinetuneSteps(-10)"
+                      style="padding: 2px 8px; min-width: 24px; height: 26px; border: none; font-weight: bold; font-size: 0.85rem; background: transparent;">-</button>
+                    <input type="number" id="finetune-steps" value="120" min="10" max="2000" step="10"
+                      style="flex: 1; text-align: center; font-family: monospace; background: transparent; border: none; padding: 0; color: var(--text); font-size: 0.8rem; outline: none; width: 100%;" />
+                    <button class="btn btn-ghost" onclick="adjustFinetuneSteps(10)"
+                      style="padding: 2px 8px; min-width: 24px; height: 26px; border: none; font-weight: bold; font-size: 0.85rem; background: transparent;">+</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="grid2">
+                <div class="form-row">
+                  <label class="fl">Rank (R)</label>
+                  <div
+                    style="display: flex; gap: 4px; align-items: center; background: rgba(0,0,0,0.15); border: 1px solid var(--border); border-radius: 6px; padding: 2px 4px; width: 100%;">
+                    <button class="btn btn-ghost" onclick="adjustFinetuneRank(-4)"
+                      style="padding: 2px 8px; min-width: 24px; height: 26px; border: none; font-weight: bold; font-size: 0.85rem; background: transparent;">-</button>
+                    <input type="number" id="finetune-rank" value="16" min="4" max="128" step="4"
+                      style="flex: 1; text-align: center; font-family: monospace; background: transparent; border: none; padding: 0; color: var(--text); font-size: 0.8rem; outline: none; width: 100%;" />
+                    <button class="btn btn-ghost" onclick="adjustFinetuneRank(4)"
+                      style="padding: 2px 8px; min-width: 24px; height: 26px; border: none; font-weight: bold; font-size: 0.85rem; background: transparent;">+</button>
+                  </div>
+                </div>
+                <div class="form-row">
+                  <label class="fl">LoRA Alpha</label>
+                  <div
+                    style="display: flex; gap: 4px; align-items: center; background: rgba(0,0,0,0.15); border: 1px solid var(--border); border-radius: 6px; padding: 2px 4px; width: 100%;">
+                    <button class="btn btn-ghost" onclick="adjustFinetuneAlpha(-4)"
+                      style="padding: 2px 8px; min-width: 24px; height: 26px; border: none; font-weight: bold; font-size: 0.85rem; background: transparent;">-</button>
+                    <input type="number" id="finetune-alpha" value="16" min="4" max="128" step="4"
+                      style="flex: 1; text-align: center; font-family: monospace; background: transparent; border: none; padding: 0; color: var(--text); font-size: 0.8rem; outline: none; width: 100%;" />
+                    <button class="btn btn-ghost" onclick="adjustFinetuneAlpha(4)"
+                      style="padding: 2px 8px; min-width: 24px; height: 26px; border: none; font-weight: bold; font-size: 0.85rem; background: transparent;">+</button>
+                  </div>
+                </div>
+              </div>
+
+              <button class="btn btn-primary" id="btn-start-finetune" style="height: 44px; font-size: 0.9rem;"
+                onclick="startVoiceFinetune()">
+                <i data-lucide="zap"></i> Start Fine-Tuning
+              </button>
+            </div>
+
+            <!-- Log Terminal Column (Glassmorphism design) -->
+            <div class="card-surface"
+              style="padding: 0; overflow: hidden; display: flex; flex-direction: column; height: 320px; border: 1px solid var(--border); border-radius: 12px; background: rgba(16, 20, 38, 0.45); backdrop-filter: blur(12px); box-shadow: var(--shadow);">
+              <div
+                style="background: rgba(0,0,0,0.3); border-bottom: 1px solid var(--border); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="width: 10px; height: 10px; border-radius: 50%; background: var(--red);"></span>
+                  <span style="width: 10px; height: 10px; border-radius: 50%; background: var(--amber);"></span>
+                  <span style="width: 10px; height: 10px; border-radius: 50%; background: var(--green);"></span>
+                  <span
+                    style="font-family: monospace; font-size: 0.72rem; color: var(--text2); margin-left: 8px;">sft_finetune.log</span>
+                </div>
+                <div
+                  style="font-size: 0.65rem; color: var(--cyan); background: rgba(0, 229, 255, 0.08); padding: 2px 6px; border-radius: 4px; font-family: monospace;"
+                  id="sim-status">OFFLINE</div>
+              </div>
+
+              <div id="sim-terminal"
+                style="flex: 1; padding: 16px; font-family: var(--font); font-size: 0.78rem; color: var(--text); overflow-y: auto; display: flex; flex-direction: column; gap: 8px; line-height: 1.5; background: rgba(8, 9, 15, 0.4); backdrop-filter: blur(8px);">
+                <div style="color: var(--text3); font-style: italic; display: flex; align-items: center; gap: 6px;">
+                  <i data-lucide="info" style="width: 13px; height: 13px; color: var(--text3);"></i>
+                  <span>System ready. Select a saved voice and click "Start Fine-Tuning" to begin.</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Loss Curve & Actions Column (2026 Neon Style) -->
+            <div class="card-surface"
+              style="display: flex; flex-direction: column; gap: 16px; height: 320px; align-self: stretch; background: rgba(16, 20, 38, 0.45); backdrop-filter: blur(12px); border: 1px solid var(--border);">
+              <div
+                style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                <span
+                  style="font-family: var(--font-display); font-weight: 700; font-size: 0.88rem; color: var(--text);">Loss
+                  Curve</span>
+                <span id="loss-display"
+                  style="font-family: monospace; font-size: 0.75rem; color: var(--cyan); font-weight: bold;">--</span>
+              </div>
+
+              <div
+                style="flex: 1; position: relative; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.25); border-radius: 8px; border: 1px solid var(--border); overflow: hidden;">
+                <canvas id="loss-canvas"
+                  style="width: 100%; height: 100%; position: absolute; top: 0; left: 0;"></canvas>
+                <div id="loss-placeholder"
+                  style="color: var(--text3); font-size: 0.75rem; font-style: italic; z-index: 1;">No active data</div>
+              </div>
+
+              <button class="btn btn-ghost" id="btn-abort-finetune"
+                style="height: 38px; border-color: rgba(255, 82, 82, 0.2); color: var(--red); font-size: 0.82rem;"
+                onclick="abortVoiceFinetune()" disabled>
+                <i data-lucide="stop-circle" style="width: 14px; height: 14px; margin-right: 4px;"></i> Abort
+                Fine-Tuning
+              </button>
+            </div>
+
+          </div>
+
+          <!-- Segment Review & Auditing Panel (Hidden by default) -->
+          <div class="card-surface" id="finetune-review-panel"
+            style="margin-top: 24px; display: none; flex-direction: column; gap: 16px; border: 1px solid var(--border); border-radius: 12px; background: rgba(16, 20, 38, 0.45); backdrop-filter: blur(12px);">
+            <div
+              style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
+              <div>
+                <h4 style="font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; color: var(--text);">
+                  Data Auditing - Verify & Edit Segment Transcripts
+                </h4>
+                <p style="font-size: 0.78rem; color: var(--text2); margin-top: 4px;">
+                  Review Whisper word-aligned segments. Make edits to match spelling/context perfectly before running
+                  target speaker adaptation.
+                </p>
+              </div>
+              <div style="display: flex; gap: 12px;">
+                <button class="btn btn-ghost"
+                  style="height: 36px; font-size: 0.8rem; border-color: rgba(255,255,255,0.1);"
+                  onclick="cancelFinetuneReview()">Cancel</button>
+                <button class="btn btn-primary" style="height: 36px; font-size: 0.8rem;"
+                  onclick="confirmAndStartFinetune()">
+                  <i data-lucide="zap" style="width: 14px; height: 14px; margin-right: 4px;"></i> Confirm & Start
+                  Training
+                </button>
+              </div>
+            </div>
+
+            <div style="max-height: 400px; overflow-y: auto;">
+              <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.82rem;">
+                <thead>
+                  <tr style="border-bottom: 2px solid var(--border); color: var(--text2); opacity: 0.8;">
+                    <th style="padding: 12px; width: 60px;">ID</th>
+                    <th style="padding: 12px; width: 120px;">Play Segment</th>
+                    <th style="padding: 12px;">Segment Text (Editable)</th>
+                    <th style="padding: 12px; width: 120px; text-align: center;">Confidence</th>
+                    <th style="padding: 12px; width: 120px; text-align: center;">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="finetune-segments-tbody">
+                  <!-- Dynamic content will be injected here -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════ SETTINGS TAB CONTENT ════════ -->
+      <div class="tab-content" id="tab-content-settings" style="padding: 24px; overflow-y: auto;">
+        <div style="max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; height: 100%;">
+          <div>
+            <h2
+              style="font-family:var(--font-display); font-weight:750; font-size:1.6rem; color:var(--text); margin-bottom:6px;">
+              Engine Status & Diagnostics</h2>
+            <p style="font-size:0.88rem; color:var(--text2);">Monitor system connection state, Ollama host models
+              health, and watch the synthesis compilation logs in real-time.</p>
+          </div>
+
+          <!-- Large logs viewer console -->
+          <div style="flex:1; display:flex; flex-direction:column; min-height:450px; padding-bottom:40px;">
+            <div class="section-label" style="margin-bottom:10px;"><i data-lucide="terminal"></i> System Execution logs
+            </div>
+            <div class="log-panel" id="log-panel-diagnostics"
+              style="flex:1; max-height:none; font-family:'Courier New', monospace; font-size:0.8rem; line-height:1.5; padding:16px; border-radius:12px; background:rgba(0,0,0,0.45); border:1px solid var(--border); overflow-y:auto; box-shadow:var(--shadow);">
+              <div class="log-line info">Diagnostic logger started. Waiting for backend activities...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Custom Save Voice Modal -->
+  <div id="save-voice-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Save Voice Profile</h3>
+        <button class="modal-close-btn" onclick="closeSaveVoiceModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>Give your voice profile a name to register it in your library.</p>
+        <div class="form-row" style="margin-top: 12px;">
+          <label class="fl">Voice Name</label>
+          <input type="text" id="save-voice-name-input" placeholder="e.g., narrator_voice" style="width: 100%;">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost btn-sm" onclick="closeSaveVoiceModal()"
+          style="border:1px solid var(--border); background:transparent; color:var(--text2);">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="confirmSaveCurrentTimbre()"
+          style="width:auto; padding: 6px 14px; font-size: 0.8rem;">Save Voice</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom New Project Modal -->
+  <div id="new-project-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>New Video Project</h3>
+        <button class="modal-close-btn" onclick="closeNewProjectModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>Enter a name for your project. This will be shown in your video history.</p>
+        <div class="form-row" style="margin-top: 12px;">
+          <label class="fl">Video / Project Name</label>
+          <input type="text" id="new-project-name-input" placeholder="e.g., Intro Script Video" style="width: 100%;">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost btn-sm" onclick="closeNewProjectModal()"
+          style="border:1px solid var(--border); background:transparent; color:var(--text2);">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="confirmCreateProject()"
+          style="width:auto; padding: 6px 14px; font-size: 0.8rem;">Create Project</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="sidebar-project-actions" style="display:none;"></div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>

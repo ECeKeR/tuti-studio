@@ -1,0 +1,83 @@
+version: '3'
+
+includes:
+  common: ./build/Taskfile.yml
+  windows: ./build/windows/Taskfile.yml
+  darwin: ./build/darwin/Taskfile.yml
+  linux: ./build/linux/Taskfile.yml
+  ios: ./build/ios/Taskfile.yml
+  android: ./build/android/Taskfile.yml
+
+vars:
+  APP_NAME: "Tuti"
+  BIN_DIR: "bin"
+  VITE_PORT:
+    sh: |
+      if [ -n "$WAILS_VITE_PORT" ]; then
+        echo "$WAILS_VITE_PORT"
+      elif ! lsof -i :9245 >/dev/null 2>&1; then
+        echo "9245"
+      else
+        python3 -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()'
+      fi
+
+tasks:
+  build:
+    summary: Builds the application
+    cmds:
+      - task: "{{OS}}:build"
+
+  build:windows:
+    summary: Builds the Windows executable (.exe)
+    cmds:
+      - task: windows:build
+
+  package:windows:
+    summary: Packages the Windows installer (requires NSIS / makensis)
+    cmds:
+      - task: windows:package
+
+  package:
+    summary: Packages a production build of the application
+    cmds:
+      - task: "{{OS}}:package"
+
+  dmg:
+    summary: Packages and creates a DMG installer of the application
+    cmds:
+      - task: "{{OS}}:dmg"
+
+  run:
+    summary: Runs the application
+    cmds:
+      - task: "{{OS}}:run"
+
+  dev:
+    summary: Runs the application in development mode
+    cmds:
+      - wails3 dev -config ./build/config.yml -port {{.VITE_PORT}}
+
+  setup:docker:
+    summary: Builds Docker image for cross-compilation (~800MB download)
+    cmds:
+      - task: common:setup:docker
+
+  build:server:
+    summary: Builds the application in server mode (no GUI, HTTP server only)
+    cmds:
+      - task: common:build:server
+
+  run:server:
+    summary: Runs the application in server mode
+    cmds:
+      - task: common:run:server
+
+  build:docker:
+    summary: Builds a Docker image for server mode deployment
+    cmds:
+      - task: common:build:docker
+
+  run:docker:
+    summary: Builds and runs the Docker image
+    cmds:
+      - task: common:run:docker
