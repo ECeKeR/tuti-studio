@@ -12,6 +12,10 @@ build/
 !bin/Tuti-amd64-portable.exe
 !bin/Tuti-arm64-portable.exe
 
+# Temporary files & cache
+.task/
+IconKitchen-Output/
+
 # Python runtime and packaging
 __pycache__/
 *.py[cod]
