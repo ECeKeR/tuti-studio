@@ -5,10 +5,13 @@
 </p>
 
 <p align="center">
-  <audio src="assets/repo_ses.MP3" controls>
-    <a href="assets/repo_ses.MP3">Listen to the introduction voiceover (repo_ses.MP3)</a>
-  </audio>
+  <strong>🎙 Listen Before Reading</strong><br>
+  This repository includes a short audio introduction generated with Tuti Studio.<br><br>
+  <a href="https://github.com/user-attachments/files/29273011/repo_ses.MP3">
+    🔊 Play Audio Introduction
+  </a>
 </p>
+
 
 <p align="center">
   <a href="README.tr.md">🇹🇷 Türkçe Dokümantasyon</a>
