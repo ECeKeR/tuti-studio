@@ -12,27 +12,27 @@ class PresetSpeechMapPlan:
         # YouTuber akıcılığı ve kararlılığı odaklı basit acting cue'lar.
         # SFT için default stress 0.70'tir. (YouTube Set)
         if text.endswith("?"):
-            tts_instruct = "Asking a question with natural curiosity and a rising intonation at the end."
+            tts_instruct = "Curious, rising tone."
             intonation_trend = "rising"
             pause_after = 0.55
             stress = 0.70
         elif text.endswith("!"):
-            tts_instruct = "Energetic and lively YouTuber delivery with positive enthusiasm."
+            tts_instruct = "Energetic, lively tone."
             intonation_trend = "falling"
             pause_after = 0.65
             stress = 0.70
         elif is_opening:
-            tts_instruct = "Confident and engaging YouTuber opener, direct and clear."
+            tts_instruct = "Confident, clear host."
             intonation_trend = "stable"
             pause_after = 0.25
             stress = 0.70
         elif is_closing:
-            tts_instruct = "Warm and friendly YouTuber wrap-up, ending with confidence."
+            tts_instruct = "Warm, friendly wrap-up."
             intonation_trend = "falling"
             pause_after = 0.40
             stress = 0.70
         else:
-            tts_instruct = "Clear, natural, and steady YouTuber narration with fluent forward momentum."
+            tts_instruct = "Natural, steady narration."
             intonation_trend = "stable"
             pause_after = 0.25
             stress = 0.70
@@ -42,19 +42,19 @@ class PresetSpeechMapPlan:
         if tone == "energetic":
             speed = 1.10
             stress = min(stress + 0.05, 0.85)
-            tts_instruct += " High energy, speaking with a smile."
+            tts_instruct = "High energy delivery."
         elif tone == "calm":
             speed = 1.00
             stress = max(stress - 0.10, 0.60)
-            tts_instruct += " Relaxed and calm, but still moving forward."
+            tts_instruct = "Calm, relaxed pacing."
         elif tone == "serious":
             speed = 1.00
             stress = min(stress + 0.05, 0.80)
-            tts_instruct += " Deliberate and authoritative, measured delivery."
+            tts_instruct = "Serious, authoritative weight."
         elif tone == "warm":
             speed = 1.05
             stress = min(stress + 0.05, 0.80)
-            tts_instruct += " Friendly, warm smile audible in the voice."
+            tts_instruct = "Warm, friendly delivery."
 
         # Temperature: SFT için 0.40 en uygun değerdir.
         base_temp = 0.40
@@ -96,53 +96,53 @@ class PresetSpeechMapPlan:
         is_closing = seg_index == total_segments - 1
 
         if text.endswith("?"):
-            tts_instruct = "Asking a question with natural curiosity and a rising intonation at the end."
+            tts_instruct = "Curious, rising tone."
             intonation_trend = "rising"
             pause_after = 0.60
             stress = 0.70
             emotion = "curious"
         elif text.endswith("!"):
-            tts_instruct = "Energetic and lively YouTuber delivery with positive enthusiasm."
+            tts_instruct = "Energetic, lively tone."
             intonation_trend = "falling"
             pause_after = 0.80
             stress = 0.90
             emotion = "excited"
         elif is_opening:
-            tts_instruct = "Confident and engaging YouTuber opener, direct and clear."
+            tts_instruct = "Confident, clear host."
             intonation_trend = "stable"
             pause_after = 0.50
             stress = 0.80
             emotion = "welcoming"
         elif is_closing:
-            tts_instruct = "Warm and friendly YouTuber wrap-up, ending with confidence."
+            tts_instruct = "Warm, friendly wrap-up."
             intonation_trend = "falling"
             pause_after = 0.80
             stress = 0.65
             emotion = "natural"
         else:
-            tts_instruct = "Clear, natural, and steady YouTuber narration with fluent forward momentum."
+            tts_instruct = "Natural, steady narration."
             intonation_trend = "stable"
             pause_after = 0.50
             stress = 0.70
             emotion = "natural"
 
-        speed = 1.0
+        speed = 1.08
         if tone == "energetic":
             speed = min(speed * 1.05, 1.2)
             stress = min(stress + 0.15, 1.0)
-            tts_instruct += " High energy and extra liveliness."
+            tts_instruct = "High energy delivery."
         elif tone == "calm":
             speed = max(speed * 0.9, 0.8)
             stress = max(stress - 0.15, 0.4)
             pause_after = max(pause_after + 0.2, 0.4)
-            tts_instruct += " Calm, measured narration at a steady pace."
+            tts_instruct = "Calm, relaxed pacing."
         elif tone == "warm":
             stress = min(stress + 0.05, 0.9)
-            tts_instruct += " Warm and sincere narration."
+            tts_instruct = "Warm, friendly delivery."
         elif tone == "serious":
             speed = max(speed * 0.95, 0.85)
             stress = min(stress + 0.1, 0.95)
-            tts_instruct += " Clear, direct, and deliberate narration."
+            tts_instruct = "Serious, authoritative weight."
 
         pitch = 0.0
         if text.endswith("?"):

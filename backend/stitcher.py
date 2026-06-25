@@ -31,12 +31,13 @@ FALLBACK_SR = 24000
 class AudioStitcher:
     def __init__(
         self,
-        crossfade_ms: int = 12,              # Geçiş süresi (ms) — daha kısa = daha doğal
+        crossfade_ms: int = 25,              # Geçiş süresi (ms) — daha kısa = daha doğal (25ms geçişleri yumuşatır)
         target_lufs: float = TARGET_LUFS,
         ambient_level_db: float = -72.0,     # Oda tonu seviyesi (dBFS)
         pause_jitter_pct: float = 0.18,      # Duraklama rastgeleliği (±%18)
         use_acoustic_bridge: bool = True,    # Eklendi: self'e atanacak
-        ollama_bridge: bool = False          # Eklendi: self'e atanacak
+        ollama_bridge: bool = False,          # Eklendi: self'e atanacak
+        use_hybrid_comping: bool = False     # Eklendi: hibrit öbek comping
     ):
         self.crossfade_ms = crossfade_ms
         self.target_lufs = target_lufs
@@ -46,6 +47,7 @@ class AudioStitcher:
         # Kritik Düzeltme: Parametre atamaları yapıldı
         self.use_acoustic_bridge = use_acoustic_bridge
         self.ollama_bridge = ollama_bridge
+        self.use_hybrid_comping = use_hybrid_comping
         
         # Bridge Nesnesi Başlatıldı
         if AcousticBridge and self.use_acoustic_bridge:
@@ -103,7 +105,7 @@ class AudioStitcher:
                             alignments.append(json.load(f))
                             valid_paths.append(tp)
                             
-                if len(valid_paths) > 1 and len(alignments) == len(valid_paths):
+                if self.use_hybrid_comping and len(valid_paths) > 1 and len(alignments) == len(valid_paths):
                     # Birden fazla take ve alignment var, Phrase Comping Engine çalıştır!
                     audio = self._stitch_hybrid_segment(seg, valid_paths, alignments)
                     if audio is not None:
@@ -137,6 +139,15 @@ class AudioStitcher:
         # Post-process
         result = self._trim_silence(result)
         result = self._master(result)
+
+        # Apply global output speed if specified and different from 1.0
+        if hasattr(self, "output_speed") and abs(self.output_speed - 1.0) > 0.005:
+            log.info(f"  Applying global output speed: {self.output_speed:.2f}x using librosa time stretch")
+            try:
+                import librosa
+                result = librosa.effects.time_stretch(result, rate=self.output_speed)
+            except Exception as e:
+                log.warning(f"  Failed to apply global output speed time stretch: {e}")
 
         sf.write(output_path, result, self._sr)
         duration = len(result) / self._sr

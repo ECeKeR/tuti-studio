@@ -1802,6 +1802,10 @@ def stitch_audio():
         if abs(output_speed - 1.0) > 0.005:
             log.info(f"Hız ayarı aktif: {output_speed:.2f}x")
         
+        # Hibrit comping ayarı (varsayılan False)
+        use_hybrid_comping = bool(data.get("use_hybrid_comping", False))
+        stitcher.use_hybrid_comping = use_hybrid_comping
+        
         # Prepare segments for the stitcher.py
         # It expects list[list[dict]], where flat_segments represents the chosen takes
         all_segments_input = []

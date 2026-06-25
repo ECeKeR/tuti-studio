@@ -11,53 +11,53 @@ class CloneSpeechMapPlan:
 
         # v3: KISA, duygu odaklı yönlendirmeler (9-12 kelime)
         if text.endswith("?"):
-            tts_instruct = "Speak with genuine curiosity and rising intrigue, as if truly puzzled."
+            tts_instruct = "Curious, puzzled tone."
             intonation_trend = "rising"
             pause_after = 0.60
             stress = 0.70
             emotion = "curious"
         elif text.endswith("!"):
-            tts_instruct = "Speak with energetic excitement, fast and punchy, like revealing a trick."
+            tts_instruct = "Energetic, excited delivery."
             intonation_trend = "falling"
             pause_after = 0.80
             stress = 0.90
             emotion = "excited"
         elif is_opening:
-            tts_instruct = "Speak with bright curiosity and a teasing hook. Lean in, pull the viewer in."
+            tts_instruct = "Bright, engaging hook."
             intonation_trend = "stable"
             pause_after = 0.50
             stress = 0.80
             emotion = "welcoming"
         elif is_closing:
-            tts_instruct = "Speak with warm satisfaction, a grin audible in your voice. Land it."
+            tts_instruct = "Warm, satisfied grin."
             intonation_trend = "falling"
             pause_after = 0.80
             stress = 0.65
             emotion = "natural"
         else:
-            tts_instruct = "Speak in an energetic, engaging YouTuber voiceover. Crisp, forward momentum."
+            tts_instruct = "Energetic YouTuber voice."
             intonation_trend = "stable"
             pause_after = 0.50
             stress = 0.70
             emotion = "natural"
 
-        speed = 1.0
+        speed = 1.08
         if tone == "energetic":
             speed = min(speed * 1.05, 1.2)
             stress = min(stress + 0.15, 1.0)
-            tts_instruct += " Speak with high energy and bright excitement."
+            tts_instruct = "High energy delivery."
         elif tone == "calm":
             speed = max(speed * 0.9, 0.8)
             stress = max(stress - 0.15, 0.4)
             pause_after = max(pause_after + 0.2, 0.4)
-            tts_instruct = "Speak calmly and softly, with gentle and relaxed pacing."
+            tts_instruct = "Calm, relaxed pacing."
         elif tone == "warm":
             stress = min(stress + 0.05, 0.9)
-            tts_instruct = "Speak with warm sincerity, a smile audible in your voice."
+            tts_instruct = "Warm, friendly delivery."
         elif tone == "serious":
             speed = max(speed * 0.95, 0.85)
             stress = min(stress + 0.1, 0.95)
-            tts_instruct = "Speak with serious authority and deliberate, firm weight."
+            tts_instruct = "Serious, authoritative weight."
 
         pitch = 0.0
         if text.endswith("?"):

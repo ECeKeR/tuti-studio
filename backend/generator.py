@@ -99,7 +99,7 @@ class TTSGenerator:
     ) -> list[str]:
         Path(output_dir).mkdir(parents=True, exist_ok=True)
 
-        base_instruct = "Casual, natural delivery — speaking with a slight smile, close to the microphone, forward momentum, no unnecessary pauses."
+        base_instruct = "Natural, casual delivery."
         if speech_map_segment:
             base_instruct = speech_map_segment.get("tts_instruct", base_instruct)
   
@@ -146,6 +146,20 @@ class TTSGenerator:
                 seed=take_seed,
                 temperature=take_temp,
             )
+            # Apply planned speed time-stretch if speed != 1.0
+            if speech_map_segment:
+                seg_speed = float(speech_map_segment.get("speed", 1.0))
+                if abs(seg_speed - 1.0) > 0.005:
+                    log.info(f"    Applying segment speed stretch of {seg_speed:.2f}x to {path}")
+                    try:
+                        import librosa
+                        import soundfile as sf
+                        y, sr = librosa.load(path, sr=None)
+                        if len(y) > 0:
+                            y_stretched = librosa.effects.time_stretch(y, rate=seg_speed)
+                            sf.write(path, y_stretched, sr)
+                    except Exception as e:
+                        log.warning(f"    Failed to apply segment speed stretch: {e}")
             paths.append(path)
             if on_take_callback:
                 on_take_callback(i, path)
@@ -157,28 +171,9 @@ class TTSGenerator:
         if n == 1:
             return [user_temp]
 
-        sft_loaded = self._sft_adapter_loaded
-        is_clone_flow = self.voice_mode == "clone"
-        emotion = segment.get("emotion", "neutral") if segment else "neutral"
-        is_excited = emotion in ("excited", "happy", "amused")
-
-        # V3 KAZANAN BANT (youtube_test_script_v3 A_hookB_split2):
-        # Dar ve daha yüksek sıcaklık → duyguyu korur, monotonluğu kırmaz.
-        # Çok geniş spread (0.55-0.85) modeli "talimat takibi" moduna sokuyordu.
-        if is_clone_flow or sft_loaded:
-            if is_excited:
-                lo = max(0.62, user_temp - 0.05)
-                hi = min(0.72, user_temp + 0.10)
-            else:
-                lo = max(0.58, user_temp - 0.05)
-                hi = min(0.68, user_temp + 0.10)
-        else:
-            if is_excited:
-                lo = max(0.65, user_temp - 0.05)
-                hi = min(0.75, user_temp + 0.10)
-            else:
-                lo = max(0.60, user_temp - 0.05)
-                hi = min(0.72, user_temp + 0.10)
+        # Use a very narrow spread to ensure voice/timbre consistency across takes of the same segment
+        lo = max(0.40, user_temp - 0.02)
+        hi = min(0.85, user_temp + 0.04)
 
         temps = []
         for i in range(n):
